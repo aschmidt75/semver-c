@@ -1,6 +1,30 @@
+/*
+ * MIT License
+ *
+ * Copyright 2023 @aschmidt75
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "semver.h"
@@ -46,19 +70,22 @@ typedef struct {
  * semver_version_delete. Do not call multiple times on existing parsed
  * structures, may leak memory.
  */
-int semver_version_from_string_impl(semver_version *self, const char *s);
+int semver_version_from_string_impl(semver_version self, const char *s);
 
-semver_version *semver_version_new() {
+semver_version semver_version_new() {
   semver_version_impl *res;
-  semver_version_impl svdefault = {0, 0, 0, NULL, NULL};
 
   SEMVER_NEW(res, semver_version_impl);
-  *res = svdefault;
+  res->major = 0;
+  res->minor = 0;
+  res->patch = 0;
+  res->prerelease = 0;
+  res->build = 0;
 
-  return (semver_version *)res;
+  return (semver_version )res;
 }
 
-semver_version *semver_version_from(unsigned long major, unsigned long minor,
+semver_version semver_version_from(unsigned long major, unsigned long minor,
                                     unsigned long patch, const char *prerelease,
                                     const char *build) {
 
@@ -69,38 +96,68 @@ semver_version *semver_version_from(unsigned long major, unsigned long minor,
   res->patch = patch;
   if (prerelease != NULL && strlen(prerelease) > 0) {
     res->prerelease = strdup(prerelease);
+  } else {
+    res->prerelease = 0;
   }
   if (build != NULL && strlen(build) > 0) {
     res->build = strdup(build);
+  } else {
+    res->build = 0;
   }
-  return (semver_version *)res;
+  return (semver_version )res;
 }
 
-semver_version *semver_version_from_string(const char *s) {
+semver_version semver_version_from_string(const char *s) {
+  int k;
   semver_version_impl *res = (semver_version_impl *)semver_version_new();
-  int k = semver_version_from_string_impl(res, s);
+  k = semver_version_from_string_impl(res, s);
   if (k != SEMVER_OK) {
     semver_version_delete(res);
     return NULL;
   }
-  return (semver_version *)res;
+  return (semver_version )res;
 }
 
 semver_version_wrapped semver_version_from_string_wrapped(const char *s) {
+  int k;
   semver_version_wrapped res = {0, {.result = 0}};
   semver_version_impl *impl = (semver_version_impl *)semver_version_new();
-  int k = semver_version_from_string_impl(impl, s);
-  if (k != SEMVER_OK) {
-    semver_version_wrapped res = {1,{.code = -1}};
+  k = semver_version_from_string_impl(impl, s);
+    if (k != SEMVER_OK) {
+    semver_version_wrapped res = {1, {.code = -1}};
     semver_version_delete(impl);
     res.unwrap.code = k;
     return res;
   }
-  res.unwrap.result = (semver_version *)impl;
+  res.unwrap.result = (semver_version )impl;
   return res;
 }
 
-void semver_version_delete(semver_version *_self) {
+semver_version semver_version_from_copy(const semver_version _v) {
+  const semver_version_impl *v = (const semver_version_impl *)_v;
+  semver_version_impl *res;
+  if (v == 0) {
+    return 0;
+  }
+  res = (semver_version_impl *)semver_version_new();
+
+  res->major = v->major;
+  res->minor = v->minor;
+  res->patch = v->patch;
+  res->prerelease = 0;
+  res->build = 0;
+
+  if (v->prerelease != 0) {
+    res->prerelease = strdup(v->prerelease);
+  }
+  if (v->build != 0) {
+    res->build = strdup(v->build);
+  }
+
+  return (semver_version)res;
+}
+
+void semver_version_delete(semver_version _self) {
   semver_version_impl *self = (semver_version_impl *)_self;
   if (self == NULL) {
     return;
@@ -116,22 +173,22 @@ void semver_version_delete(semver_version *_self) {
   free(self);
 }
 
-unsigned long semver_version_get_major(const semver_version *_self) {
+unsigned long semver_version_get_major(const semver_version _self) {
   semver_version_impl *self = (semver_version_impl *)_self;
   return self->major;
 }
 
-unsigned long semver_version_get_minor(const semver_version *_self) {
+unsigned long semver_version_get_minor(const semver_version _self) {
   semver_version_impl *self = (semver_version_impl *)_self;
   return self->minor;
 }
 
-unsigned long semver_version_get_patch(const semver_version *_self) {
+unsigned long semver_version_get_patch(const semver_version _self) {
   semver_version_impl *self = (semver_version_impl *)_self;
   return self->patch;
 }
 
-void semver_version_get(const semver_version *_self, unsigned long *major,
+void semver_version_get(const semver_version _self, unsigned long *major,
                         unsigned long *minor, unsigned long *patch) {
   semver_version_impl *self = (semver_version_impl *)_self;
   *major = self->major;
@@ -139,27 +196,37 @@ void semver_version_get(const semver_version *_self, unsigned long *major,
   *patch = self->patch;
 }
 
-size_t semver_version_copy_prerelease(const semver_version *_self, char *str,
+size_t semver_version_copy_prerelease(const semver_version _self, char *str,
                                       size_t size) {
   semver_version_impl *self = (semver_version_impl *)_self;
-  if (self->prerelease == NULL) {
+  if (!str || size == 0) {
     return 0;
   }
-  return snprintf(str, size, "%s", self->prerelease);
+  if (self->prerelease == NULL) {
+    str[0] = 0;
+    return 0;
+  }
+  strncpy(str, self->prerelease, size);
+  return 1;
 }
 
-size_t semver_version_copy_build(const semver_version *_self, char *str,
+size_t semver_version_copy_build(const semver_version _self, char *str,
                                  size_t size) {
   semver_version_impl *self = (semver_version_impl *)_self;
-  if (self->build == NULL) {
+  if (!str || size == 0) {
     return 0;
   }
-  return snprintf(str, size, "%s", self->build);
+  if (self->build == NULL) {
+    str[0] = 0;
+    return 0;
+  }
+  strncpy(str, self->build, size);
+  return 1;
 }
 
-int semver_version_from_string_impl(semver_version *_self, const char *s) {
-  char *scratch = NULL;
-  const char *p = s;
+int semver_version_from_string_impl(semver_version _self, const char *s) {
+  char scratch[SEMVER_MAXLEN];
+  char *p = s;
   char *ptr;
   char *w = scratch;
 
@@ -169,24 +236,15 @@ int semver_version_from_string_impl(semver_version *_self, const char *s) {
     return SEMVER_ERROR_PARSE_TOO_LONG;
   }
 
-  /* allocate scratch buffer */
-  scratch = (char *)malloc(n + 1);
-  if (!scratch) {
-    printf("Malloc Error: %s\n", __func__);
-    return 0;
-  }
-  memset(scratch, 0, n + 1);
-
-  w = scratch;
+  memset(scratch, 0,sizeof(scratch));
+  w = &scratch[0];
   do {
-    if (*p == 0) {
-      free(scratch);
+    if (p == 0 || *p == 0) {
       return SEMVER_ERROR_PARSE_PREMATURE_EOS;
     }
     if (*p == '.') {
       p++;
       if (strlen(scratch) > 1 && *scratch == '0') {
-        free(scratch); /* leading zero */
         return SEMVER_ERROR_PARSE_NOT_ALLOWED_HERE;
       }
       /* major in scratch, take */
@@ -198,7 +256,6 @@ int semver_version_from_string_impl(semver_version *_self, const char *s) {
       continue;
     }
     /* non-matching char */
-    free(scratch);
     return SEMVER_ERROR_PARSE_NOT_ALLOWED_HERE;
 
   } while (1);
@@ -207,13 +264,11 @@ int semver_version_from_string_impl(semver_version *_self, const char *s) {
   memset(scratch, 0, n + 1);
   do {
     if (*p == 0) {
-      free(scratch);
       return SEMVER_ERROR_PARSE_PREMATURE_EOS;
     }
     if (*p == '.') {
       p++;
       if (strlen(scratch) > 1 && *scratch == '0') {
-        free(scratch); /* leading zero */
         return SEMVER_ERROR_PARSE_NOT_ALLOWED_HERE;
       }
       /* minor in scratch, take */
@@ -224,43 +279,40 @@ int semver_version_from_string_impl(semver_version *_self, const char *s) {
       *w++ = *p++;
       continue;
     }
-    free(scratch);
     return SEMVER_ERROR_PARSE_NOT_ALLOWED_HERE;
   } while (1);
 
   w = scratch;
-  memset(scratch, 0, n + 1);
+  memset(scratch, 0,sizeof(scratch));
   do {
+    size_t strlen_scratch = strlen(scratch);
     if (*p == 0) {
-      if (strlen(scratch) > 1 && *scratch == '0') {
-        free(scratch); /* leading zero */
+
+      if (strlen_scratch > 1 && *scratch == '0') {
+        /* leading zero */
         return SEMVER_ERROR_PARSE_NOT_ALLOWED_HERE;
       }
-      if (strlen(scratch) == 0) {
+      if (strlen_scratch == 0) {
         /* handle e.g. "1.2.". we consumed the last '.', scratch is empty
            but this is not a valid semver. */
-        free(scratch);
         return SEMVER_ERROR_PARSE_PREMATURE_EOS;
       }
       self->patch = strtoul(scratch, &ptr, 10);
       /* patch version read, minimal semver reached */
-      free(scratch);
       return SEMVER_OK;
     }
     if ((*p == '-') || (*p == '+')) {
-      if (strlen(scratch) > 1 && *scratch == '0') {
-        free(scratch); /* leading zero */
+      if (strlen_scratch > 1 && *scratch == '0') {
         return SEMVER_ERROR_PARSE_NOT_ALLOWED_HERE;
       }
       /* patch read, more to follow */
-      self->patch = atoi(scratch);
+      self->patch = strtoul(scratch, &ptr, 10);
       break;
     }
     if (*p >= '0' && *p <= '9') {
       *w++ = *p++;
       continue;
     }
-    free(scratch);
     return SEMVER_ERROR_PARSE_NOT_ALLOWED_HERE;
   } while (1);
 
@@ -270,12 +322,11 @@ int semver_version_from_string_impl(semver_version *_self, const char *s) {
     /* prerelease to follow .. */
 
     w = scratch;
-    memset(scratch, 0, n + 1);
+    memset(scratch, 0, sizeof(scratch));
     do {
       if (*p == 0) {
         self->prerelease = strdup(scratch);
-        free(scratch);
-        return SEMVER_OK;
+        return SEMVER_OK; /* at end */
       }
       if (*p == '+') {
         self->prerelease = strdup(scratch);
@@ -287,7 +338,6 @@ int semver_version_from_string_impl(semver_version *_self, const char *s) {
         *w++ = *p++;
         continue;
       }
-      free(scratch);
       return SEMVER_ERROR_PARSE_NOT_ALLOWED_HERE;
     } while (1);
   }
@@ -297,11 +347,10 @@ int semver_version_from_string_impl(semver_version *_self, const char *s) {
 
     /* build strign to follow here */
     w = scratch;
-    memset(scratch, 0, n + 1);
+    memset(scratch, 0, sizeof(scratch));
     do {
       if (*p == 0) {
         self->build = strdup(scratch);
-        free(scratch);
         return SEMVER_OK;
       }
       if ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'z') ||
@@ -309,19 +358,21 @@ int semver_version_from_string_impl(semver_version *_self, const char *s) {
         *w++ = *p++;
         continue;
       }
-      free(scratch);
       return SEMVER_ERROR_PARSE_NOT_ALLOWED_HERE;
     } while (1);
   }
 
-  free(scratch);
   return SEMVER_ERROR_STRUCTURE;
 }
 
-size_t semver_version_snprint(const semver_version *_self, char *str,
+#ifdef __HAS_SNPRINTF__
+size_t semver_version_snprint(const semver_version _self, char *str,
                               size_t size) {
   const semver_version_impl *self = (semver_version_impl *)_self;
-  if (str == 0 || size == 0) {
+  if (str == 0 || size <= 0) {
+    return 0;
+  }
+  if (self == 0) {
     return 0;
   }
   if (self->prerelease == NULL && self->build == NULL) {
@@ -342,28 +393,53 @@ size_t semver_version_snprint(const semver_version *_self, char *str,
   }
   return -1;
 }
+#endif
+
+size_t semver_version_sprint(const semver_version _self, char *str) {
+  const semver_version_impl *self = (semver_version_impl *)_self;
+  if (str == 0 || self == 0) {
+    return 0;
+  }
+  
+  if (self->prerelease == 0 && self->build == 0) {
+    int k = sprintf(str, "%lu.%lu.%lu", self->major, self->minor, self->patch);
+    return k;
+  }
+  if (self->prerelease != 0 && self->build == 0) {
+    return sprintf(str, "%lu.%lu.%lu-%s", self->major, self->minor, self->patch,
+                   self->prerelease);
+  }
+  if (self->prerelease == 0 && self->build != 0) {
+    return sprintf(str, "%lu.%lu.%lu+%s", self->major, self->minor, self->patch,
+                   self->build);
+  }
+  if (self->prerelease != 0 && self->build != 0) {
+    return sprintf(str, "%lu.%lu.%lu-%s+%s", self->major, self->minor,
+                   self->patch, self->prerelease, self->build);
+  }
+  return -1;
+}
 
 int count_dots(const char *s) {
   int na = 0;
-  if (s) {
-    while (*s++ != 0) {
-      na += (*s == '.') ? 1 : 0;
-    }
+  while (s && *s++ != 0) {
+    na += (*s == '.') ? 1 : 0;
   }
   return na;
 }
 
 int atoi_checked(const char *s, unsigned long *res) {
   const char *p = s;
+  const max_num_len = 6;
   int i = 0;
   char *ptr;
-  
+
   if (s == NULL) {
     return 0;
   }
 
   while (*p != 0) {
-    if (*p >= '0' && *p <= '9' && i <= 6) {
+    if (*p >= '0' && *p <= '9' && i <= max_num_len) {
       /* ok */
     } else {
       /* not non-digit or too long */
@@ -489,7 +565,7 @@ int semver_version_prerelease_cmp(const char *a, const char *b) {
   }
   /* if we got here, both arr's are considered equal up to this point
      if any of the two is LONGER (i.e. has still elements to come), then the
-     OTHER one has precendence */
+     OTHER (shorter) one has precendence */
   res = 0;
   if (na > nb) {
     res = (i + 1);
@@ -516,7 +592,7 @@ cleanup:
  * 2/-2: prerelease
  * 0: equals
  */
-int semver_version_cmp(const semver_version *_a, const semver_version *_b) {
+int semver_version_cmp(const semver_version _a, const semver_version _b) {
   int p;
   const semver_version_impl *a = (semver_version_impl *)_a;
   const semver_version_impl *b = (semver_version_impl *)_b;

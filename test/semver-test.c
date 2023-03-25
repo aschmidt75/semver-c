@@ -6,9 +6,9 @@
 #include "unity.h"
 
 /* white-box test */
-extern int semver_version_from_string_impl(semver_version *self, const char *s);
+extern int semver_version_from_string_impl(semver_version self, const char *s);
 extern int semver_version_prerelease_cmp(const char *a, const char *b);
-extern semver_version *semver_version_new();
+extern semver_version semver_version_new();
 
 typedef struct {
   const char *inp;
@@ -57,7 +57,7 @@ void test_semver_invalid_parsing(void) {
   for (i = 0; i < sizeof(tests) / sizeof(exp_t); i++) {
     semver_version_wrapped w1;
     int res = 0;
-    semver_version *s1 = NULL;
+    semver_version s1 = NULL;
 
     /* use both construction versions */
     s1 = semver_version_from_string(tests[i].inp);
@@ -83,7 +83,9 @@ void test_semver_valid_parsing(void) {
                        "1.1.1",
                        "2.3.4",
                        "45.465.374-beta.some.thing",
-                       "13.45.2-alpha.1+SHA-4711"};
+                       "13.45.2-alpha.1+SHA-4711",
+                       "237.347.239+BUILD1"
+      };
 
   const exp2_t tests[] = {
       {"2.3.4", 2, 3, 4, NULL, NULL},
@@ -97,7 +99,7 @@ void test_semver_valid_parsing(void) {
   size_t i;
   for (i = 0; i < sizeof(inp) / sizeof(const char *); i++) {
     semver_version_wrapped w1;
-    semver_version *s1 = semver_version_from_string(inp[i]);
+    semver_version s1 = semver_version_from_string(inp[i]);
     TEST_ASSERT_NOT_NULL(s1);
     semver_version_delete(s1);
 
@@ -107,9 +109,10 @@ void test_semver_valid_parsing(void) {
 
   for (i = 0; i < sizeof(tests) / sizeof(exp2_t); i++) {
     unsigned long a, b, c;
+    size_t k;
     char buf[255];
 
-    semver_version *s1 = semver_version_from_string(tests[i].inp);
+    semver_version s1 = semver_version_from_string(tests[i].inp);
 
     TEST_ASSERT_NOT_NULL(s1);
     TEST_ASSERT_EQUAL(semver_version_get_major(s1), tests[i].exp_maj);
@@ -121,16 +124,24 @@ void test_semver_valid_parsing(void) {
     TEST_ASSERT_EQUAL(b, tests[i].exp_min);
     TEST_ASSERT_EQUAL(c, tests[i].exp_pat);
 
-    if (semver_version_copy_prerelease(s1, buf, sizeof(buf)) > 0) {
+    k = semver_version_copy_prerelease(s1, buf, sizeof(buf));
+    if (tests[i].exp_prerelease) {
       TEST_ASSERT_EQUAL_STRING(buf, tests[i].exp_prerelease);
+      TEST_ASSERT_GREATER_THAN(0, k);
     } else {
-      TEST_ASSERT_NULL(tests[i].exp_prerelease);
+      TEST_ASSERT_EQUAL(k, 0);
+      TEST_ASSERT_EQUAL(buf[0], 0);
     }
-    if (semver_version_copy_build(s1, buf, sizeof(buf)) > 0) {
+
+    k = semver_version_copy_build(s1, buf, sizeof(buf));
+    if (tests[i].exp_build) {
       TEST_ASSERT_EQUAL_STRING(buf, tests[i].exp_build);
+      TEST_ASSERT_GREATER_THAN(0, k);
     } else {
-      TEST_ASSERT_NULL(tests[i].exp_build);
+      TEST_ASSERT_EQUAL(k, 0);
+      TEST_ASSERT_EQUAL(buf[0], 0);
     }
+
     semver_version_delete(s1);
   }
 }
@@ -142,12 +153,15 @@ void test_semver_formatting(void) {
   size_t i;
   for (i = 0; i < sizeof(inp) / sizeof(const char *); i++) {
     char buf[128];
-    semver_version *s1 = semver_version_new();
+    semver_version s1 = semver_version_new();
 
     int res = semver_version_from_string_impl(s1, inp[i]);
     TEST_ASSERT_EQUAL(res, SEMVER_OK);
-
+#ifdef __HAS_SNPRINTF__
     semver_version_snprint(s1, buf, sizeof(buf));
+#else
+    semver_version_sprint(s1, buf);
+#endif
     TEST_ASSERT_EQUAL_STRING(inp[i], buf);
 
     semver_version_delete(s1);
@@ -163,13 +177,18 @@ void test_semver_constructing(void) {
   };
 
   size_t i;
+  char buf[SEMVER_MAXLEN];
   for (i = 0; i < sizeof(tests) / sizeof(exp3_t); i++) {
-    semver_version *s = semver_version_from(
+    semver_version s = semver_version_from(
         tests[i].inp_major, tests[i].inp_minor, tests[i].inp_patch,
         tests[i].inp_pre, tests[i].inp_build);
 
-    char buf[128];
+    memset(buf, 0, sizeof(buf));
+#ifdef __HAS_SNPRINTF__
     semver_version_snprint(s, buf, sizeof(buf));
+#else
+    semver_version_sprint(s, buf);
+#endif
     TEST_ASSERT_EQUAL_STRING(tests[i].exp_formatted, buf);
 
     semver_version_delete(s);
@@ -193,8 +212,8 @@ void test_semver_cmp() {
 
   size_t i;
   for (i = 0; i < sizeof(tests) / sizeof(exp4_t); i++) {
-    semver_version *a = semver_version_from_string(tests[i].inp_a);
-    semver_version *b = semver_version_from_string(tests[i].inp_b);
+    semver_version a = semver_version_from_string(tests[i].inp_a);
+    semver_version b = semver_version_from_string(tests[i].inp_b);
 
     TEST_ASSERT_EQUAL(semver_version_cmp(a, b), tests[i].exp_res);
 
@@ -222,8 +241,8 @@ void test_semver_cmp2() {
                        "1.0.0-rc.1",  "1.0.0"};
   size_t i;
   for (i = 1; i < sizeof(arr) / sizeof(const char *); i++) {
-    semver_version *a = semver_version_from_string(arr[i - 1]);
-    semver_version *b = semver_version_from_string(arr[i]);
+    semver_version a = semver_version_from_string(arr[i - 1]);
+    semver_version b = semver_version_from_string(arr[i]);
 
     int r = semver_version_cmp(a, b);
     TEST_ASSERT_LESS_THAN(0, r);
@@ -262,13 +281,43 @@ void test_semver_prerelease_cmp() {
   }
 }
 
-void run_semver_tests() {
+void test_semver_copy() {
+  const exp_t tests[] = {
+    { "1.2.3", 0 },
+  };
+  size_t i;
+  TEST_ASSERT_NULL(semver_version_from_copy(0));
 
-  RUN_TEST(test_semver_formatting);
-  RUN_TEST(test_semver_valid_parsing);
-  RUN_TEST(test_semver_invalid_parsing);
-  RUN_TEST(test_semver_constructing);
-  RUN_TEST(test_semver_cmp);
-  RUN_TEST(test_semver_cmp2);
-  RUN_TEST(test_semver_prerelease_cmp);
+  for (i = 0; i < sizeof(tests) / sizeof(exp_t); i++) {
+    char buf[SEMVER_MAXLEN];
+    semver_version p, q;
+
+    p = semver_version_from_string(tests[i].inp);
+    TEST_ASSERT_NOT_NULL(p);
+
+    q = semver_version_from_copy(p);
+    TEST_ASSERT_NOT_NULL(p);
+
+    semver_version_sprint(q, buf);
+    TEST_ASSERT_EQUAL_STRING(tests[i].inp, buf);
+
+    semver_version_delete(q);
+    semver_version_delete(p);
+  }
+
+
+}
+
+void run_semver_tests() {
+  int i;
+  for (i = 0; i < 1; i++) {
+    RUN_TEST(test_semver_formatting);
+    RUN_TEST(test_semver_valid_parsing);
+    RUN_TEST(test_semver_invalid_parsing);
+    RUN_TEST(test_semver_constructing);
+    RUN_TEST(test_semver_cmp);
+    RUN_TEST(test_semver_cmp2);
+    RUN_TEST(test_semver_prerelease_cmp);
+    RUN_TEST(test_semver_copy);
+  }
 }

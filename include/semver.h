@@ -30,13 +30,19 @@
 extern "C" {
 #endif
 
+/* use snprintf if we have it, otherwise sprintf */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#define __HAS_SNPRINTF__
+#endif
+
 /**
  * semver_version
  *
  * implements a semantic versioning (semver) record according to semver 2.0.0
  * see also <https://semver.org/spec/v2.0.0.html>
  */
-typedef void semver_version;
+struct semver_version;
+typedef struct semver_version *semver_version;
 
 /** semver_version_codes provides parsing error codes */
 typedef enum {
@@ -57,7 +63,7 @@ typedef enum {
 typedef struct {
   int err;
   union {
-    semver_version *result;
+    semver_version result;
     semver_version_codes code;
   } unwrap;
 } semver_version_wrapped;
@@ -77,7 +83,7 @@ typedef struct {
  * @param[in] build optional build string, NULL otherwise
  * @return pointer to allocated server_version struct
  */
-semver_version *semver_version_from(unsigned long major, unsigned long minor,
+semver_version semver_version_from(unsigned long major, unsigned long minor,
                                     unsigned long patch, const char *prerelease,
                                     const char *build);
 
@@ -89,7 +95,7 @@ semver_version *semver_version_from(unsigned long major, unsigned long minor,
  * @param[in] s version input string
  * @return pointer to allocated server_version struct
  */
-semver_version *semver_version_from_string(const char *s);
+semver_version semver_version_from_string(const char *s);
 
 /**
  * semver_version_new_from_string_wrapped is identical to the variant above but
@@ -101,17 +107,25 @@ semver_version *semver_version_from_string(const char *s);
 semver_version_wrapped semver_version_from_string_wrapped(const char *s);
 
 /**
+ * semver_version_from_copy allocates a new semver_version struct and copies
+ * the contents from given struct.
+ * @param[in] v semver_version object
+ * @return pointer to allocated server_version struct. Returns 0 if 0 is given.
+ */
+semver_version semver_version_from_copy(const semver_version v);
+
+/**
  * semver_version_delete deletes optionally allocated memory, and delete self
  * @param[in] self semver_version struct to delete
  */
-void semver_version_delete(semver_version *self);
+void semver_version_delete(semver_version self);
 
 /**
  * semver_version_get_* retrieves a field from the data set, see SEMVER_FIELD_*
  */
-unsigned long semver_version_get_major(const semver_version *self);
-unsigned long semver_version_get_minor(const semver_version *self);
-unsigned long semver_version_get_patch(const semver_version *self);
+unsigned long semver_version_get_major(const semver_version self);
+unsigned long semver_version_get_minor(const semver_version self);
+unsigned long semver_version_get_patch(const semver_version self);
 
 /**
  * semver_version_get copies mahor, minor, patch version into variables
@@ -120,7 +134,7 @@ unsigned long semver_version_get_patch(const semver_version *self);
  * @param[in] minor
  * @param[in] patch
  */
-void semver_version_get(const semver_version *self, unsigned long *major,
+void semver_version_get(const semver_version self, unsigned long *major,
                         unsigned long *minor, unsigned long *patch);
 
 /**
@@ -130,9 +144,8 @@ void semver_version_get(const semver_version *self, unsigned long *major,
  * @param[in] self pointer to semver_version
  * @param[in] str target buffer
  * @param[in] size maximum size of target buffer
- * @return number of bytes copied into str
  */
-size_t semver_version_copy_prerelease(const semver_version *self, char *str,
+size_t semver_version_copy_prerelease(const semver_version self, char *str,
                                       size_t size);
 
 /**
@@ -141,11 +154,11 @@ size_t semver_version_copy_prerelease(const semver_version *self, char *str,
  * @param[in] self pointer to semver_version
  * @param[in] str target buffer
  * @param[in] size maximum size of target buffer
- * @return number of bytes copied into str
  */
-size_t semver_version_copy_build(const semver_version *self, char *str,
+size_t semver_version_copy_build(const semver_version self, char *str,
                                  size_t size);
 
+#ifdef __HAS_SNPRINTF__
 /**
  * semver_version_snprint formats the version data into a string
  * @param[in] self pointer to semver_version
@@ -153,8 +166,19 @@ size_t semver_version_copy_build(const semver_version *self, char *str,
  * @param[in] size maximum size of target buffer
  * @return number of bytes copied into str
  */
-size_t semver_version_snprint(const semver_version *self, char *str,
+size_t semver_version_snprint(const semver_version self, char *str,
                               size_t size);
+#endif
+
+/**
+ * semver_version_sprint formats the version data into a string.
+ * Callers must make sure to supply a buffer large enough to hold the
+ * full semver string representation
+ * @param[in] self pointer to semver_version
+ * @param[in] str target buffer
+ * @return number of bytes copied into str
+ */
+size_t semver_version_sprint(const semver_version self, char *str);
 
 /**
  * semver_version_cmp compares two semver_versions, a, b != NULL
@@ -165,7 +189,7 @@ size_t semver_version_snprint(const semver_version *self, char *str,
  *  0 if a == b
  * >0 if a > b
  */
-int semver_version_cmp(const semver_version *a, const semver_version *b);
+int semver_version_cmp(const semver_version a, const semver_version b);
 
 #ifdef __cplusplus
 }
