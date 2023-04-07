@@ -121,7 +121,7 @@ void test_semverreq_parse(void) {
       {"~1.4.3-some+build", ">=1.4.3-some+build <1.5.0"},
       {"~0.0.2", ">=0.0.2 <0.1.0"},
       {"~7.4.2+build", ">=7.4.2+build <7.5.0"},
-      /*{"^1.3.4", ">=1.3.4 <2.0.0"},     */
+      {"^1.3.4", ">=1.3.4 <2.0.0"},     
   };
   size_t i;
   semver_version_req_wrapped r;

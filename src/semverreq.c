@@ -1,3 +1,27 @@
+/*
+ * MIT License
+ *
+ * Copyright 2023 @aschmidt75
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,7 +41,18 @@
   } while (0);
 
 
-struct semver_version_req_impl{
+/**
+ * The implementation of a semver requirement consist of a lower
+ * and an upper bound. Flags indicate if the bound is including (e.g. >=)
+ * or not (>). For an exact version match, lower == upper and both are
+ * including. For an open-end requirement (e.g. >1.0.0), only one of
+ * the bounds is set. Lower must always be <= upper.
+ * Both lower and upper == null is an invalid requirement.
+ * An all-matching requirement can be expressed by ">=0.0.0" and upper = null.
+ * This structure does not support tilde and caret operators, these are
+ * converted through the parsing process before.
+ */
+struct semver_version_req_impl {
   semver_version lower;
   int lower_including;
 
@@ -46,7 +81,7 @@ int semverreq_valid_comparator(const char *p) {
 int semverreq_comparator_is_including(const char *p) {
   if (p && *p) {
     if (strcmp(p, "<=") == 0 || strcmp(p, ">=") == 0 || strcmp(p, "=") == 0 ||
-        strcmp(p, "~") == 0) {
+        strcmp(p, "~") == 0 || strcmp(p, "^") == 0) {
       return 1;
     }
   }

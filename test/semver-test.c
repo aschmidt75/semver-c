@@ -54,10 +54,10 @@ void test_semver_invalid_parsing(void) {
   };
 
   size_t i;
+  semver_version_wrapped w1;
+  int res = 0;
+  semver_version s1 = NULL;
   for (i = 0; i < sizeof(tests) / sizeof(exp_t); i++) {
-    semver_version_wrapped w1;
-    int res = 0;
-    semver_version s1 = NULL;
 
     /* use both construction versions */
     s1 = semver_version_from_string(tests[i].inp);
@@ -97,9 +97,14 @@ void test_semver_valid_parsing(void) {
   };
 
   size_t i;
+  unsigned long a, b, c;
+  size_t k;
+  char buf[255];
+  semver_version s1;
+  semver_version_wrapped w1;
+
   for (i = 0; i < sizeof(inp) / sizeof(const char *); i++) {
-    semver_version_wrapped w1;
-    semver_version s1 = semver_version_from_string(inp[i]);
+    s1 = semver_version_from_string(inp[i]);
     TEST_ASSERT_NOT_NULL(s1);
     semver_version_delete(s1);
 
@@ -108,11 +113,7 @@ void test_semver_valid_parsing(void) {
   }
 
   for (i = 0; i < sizeof(tests) / sizeof(exp2_t); i++) {
-    unsigned long a, b, c;
-    size_t k;
-    char buf[255];
-
-    semver_version s1 = semver_version_from_string(tests[i].inp);
+    s1 = semver_version_from_string(tests[i].inp);
 
     TEST_ASSERT_NOT_NULL(s1);
     TEST_ASSERT_EQUAL(semver_version_get_major(s1), tests[i].exp_maj);
@@ -150,12 +151,14 @@ void test_semver_formatting(void) {
   const char *inp[] = {"2.3.4", "45.465.374-beta.some.thing",
                        "13.45.2-alpha.1+SHA-4711"};
 
+  char buf[128];
+  int res;
   size_t i;
+  semver_version s1;
   for (i = 0; i < sizeof(inp) / sizeof(const char *); i++) {
-    char buf[128];
-    semver_version s1 = semver_version_new();
+    s1 = semver_version_new();
 
-    int res = semver_version_from_string_impl(s1, inp[i]);
+    res = semver_version_from_string_impl(s1, inp[i]);
     TEST_ASSERT_EQUAL(res, SEMVER_OK);
 #ifdef __HAS_SNPRINTF__
     semver_version_snprint(s1, buf, sizeof(buf));
@@ -177,9 +180,10 @@ void test_semver_constructing(void) {
   };
 
   size_t i;
+  semver_version s;
   char buf[SEMVER_MAXLEN];
   for (i = 0; i < sizeof(tests) / sizeof(exp3_t); i++) {
-    semver_version s = semver_version_from(
+    s = semver_version_from(
         tests[i].inp_major, tests[i].inp_minor, tests[i].inp_patch,
         tests[i].inp_pre, tests[i].inp_build);
 
@@ -211,9 +215,10 @@ void test_semver_cmp() {
   };
 
   size_t i;
+  semver_version a,b;
   for (i = 0; i < sizeof(tests) / sizeof(exp4_t); i++) {
-    semver_version a = semver_version_from_string(tests[i].inp_a);
-    semver_version b = semver_version_from_string(tests[i].inp_b);
+    a = semver_version_from_string(tests[i].inp_a);
+    b = semver_version_from_string(tests[i].inp_b);
 
     TEST_ASSERT_EQUAL(semver_version_cmp(a, b), tests[i].exp_res);
 
@@ -240,11 +245,13 @@ void test_semver_cmp2() {
                        "1.0.0-beta",  "1.0.0-beta.2",  "1.0.0-beta.11",
                        "1.0.0-rc.1",  "1.0.0"};
   size_t i;
+  semver_version a,b;
+  int r;
   for (i = 1; i < sizeof(arr) / sizeof(const char *); i++) {
-    semver_version a = semver_version_from_string(arr[i - 1]);
-    semver_version b = semver_version_from_string(arr[i]);
+    a = semver_version_from_string(arr[i - 1]);
+    b = semver_version_from_string(arr[i]);
 
-    int r = semver_version_cmp(a, b);
+    r = semver_version_cmp(a, b);
     TEST_ASSERT_LESS_THAN(0, r);
 
     semver_version_delete(a);
@@ -286,12 +293,11 @@ void test_semver_copy() {
     { "1.2.3", 0 },
   };
   size_t i;
+  char buf[SEMVER_MAXLEN];
+  semver_version p, q;
   TEST_ASSERT_NULL(semver_version_from_copy(0));
-
+  
   for (i = 0; i < sizeof(tests) / sizeof(exp_t); i++) {
-    char buf[SEMVER_MAXLEN];
-    semver_version p, q;
-
     p = semver_version_from_string(tests[i].inp);
     TEST_ASSERT_NOT_NULL(p);
 
@@ -308,6 +314,40 @@ void test_semver_copy() {
 
 }
 
+void test_semver_cmp3() {
+
+  /*
+   * https://semver.org/spec/v2.0.0.html 11.4.4
+   * 1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-alpha.beta < 1.0.0-beta < 1.0.0-beta.2
+   * < 1.0.0-beta.11 < 1.0.0-rc.1 < 1.0.0.
+   */
+  const char *arr[] = {
+        "1.0.0-alpha", "1.0.0-alpha.1", "1.0.0-alpha.beta",
+        "1.0.0-beta",  "1.0.0-beta.2",  "1.0.0-beta.11",
+        "1.0.0-rc.1",  "1.0.0"
+      };
+
+  size_t i;
+  int comp_res, r;
+  for (i = 1; i < sizeof(arr) / sizeof(const char *); i++) {
+    comp_res = 99;
+
+    r = semver_cmp(arr[i - 1], arr[i], &comp_res);
+    TEST_ASSERT_EQUAL(0, r);
+    TEST_ASSERT_LESS_THAN(0, comp_res);
+
+    r = semver_cmp(arr[i], arr[i-1], &comp_res);
+    TEST_ASSERT_EQUAL(0, r);
+    TEST_ASSERT_GREATER_THAN(0, comp_res);
+
+    r = semver_cmp(arr[i-1], arr[i-1], &comp_res);
+    TEST_ASSERT_EQUAL(0, r);
+    TEST_ASSERT_EQUAL(0, comp_res);
+
+  }
+}
+
+
 void run_semver_tests() {
   int i;
   for (i = 0; i < 1; i++) {
@@ -319,5 +359,6 @@ void run_semver_tests() {
     RUN_TEST(test_semver_cmp2);
     RUN_TEST(test_semver_prerelease_cmp);
     RUN_TEST(test_semver_copy);
+    RUN_TEST(test_semver_cmp3);
   }
 }

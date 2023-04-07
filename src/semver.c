@@ -29,6 +29,31 @@
 
 #include "semver.h"
 
+
+int semver_cmp(const char *_a, const char *_b, int *res) {
+  semver_version a,b;
+  if (!res) {
+   return 1;
+  }
+
+  a = semver_version_from_string(_a);
+  b = semver_version_from_string(_b);
+  if(!a) {
+    return 2;
+  }
+  if(!b) {
+    return 3;
+  }
+
+  *res = semver_version_cmp(a, b);
+
+  semver_version_delete(a);
+  semver_version_delete(b);
+
+  return 0;
+}
+
+
 #define SEMVER_NEW(obj, type)                                                  \
   do {                                                                         \
     obj = malloc(sizeof(type));                                                \
@@ -120,11 +145,14 @@ semver_version semver_version_from_string(const char *s) {
 
 semver_version_wrapped semver_version_from_string_wrapped(const char *s) {
   int k;
-  semver_version_wrapped res = {0, {.result = 0}};
+  semver_version_wrapped res;
   semver_version_impl *impl = (semver_version_impl *)semver_version_new();
+  res.err = 0;
+  res.unwrap.result = 0;
   k = semver_version_from_string_impl(impl, s);
-    if (k != SEMVER_OK) {
-    semver_version_wrapped res = {1, {.code = -1}};
+  if (k != SEMVER_OK) {
+    res.err = 1;
+    res.unwrap.code = -1;
     semver_version_delete(impl);
     res.unwrap.code = k;
     return res;

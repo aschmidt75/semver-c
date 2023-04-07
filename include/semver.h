@@ -35,6 +35,20 @@ extern "C" {
 #define __HAS_SNPRINTF__
 #endif
 
+
+/**
+ * semver_cmp compares two versios, a, b semver version strings != NULL
+ * @param[in] a
+ * @param[in] b
+ * @param[out] res
+ * comparison result as int only if a,b are valid semver strings
+ * <0 if a < b
+ *  0 if a == b
+ * >0 if a > b
+ * @return success of comparison operation: 0 = successful, !=0 parsing error or comparison error
+ */
+int semver_cmp(const char *a, const char *b, int *res);
+
 /**
  * semver_version
  *
