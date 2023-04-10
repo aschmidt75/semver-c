@@ -92,8 +92,9 @@ void test_semverreq_print(void) {
 
 void test_semverreq_invalid(void) {
   semver_version_req r, *p;
-  semver_version *s1 = semver_version_from_string("1.2.3");
-  semver_version *s2 = semver_version_from_string("1.2.2");
+  semver_version *s1, *s2;
+  s1 = semver_version_from_string("1.2.3");
+  s2 = semver_version_from_string("1.2.2");
 
   /* upper < lower must be rejected */
   r = semver_version_req_from(s1, 0, s2, 0);
@@ -102,6 +103,9 @@ void test_semverreq_invalid(void) {
   /* >1.2.2 <1.2.2 is not possible */
   p = semver_version_req_from(s1, 0, s1, 0);
   TEST_ASSERT_EQUAL(p, 0);
+
+  semver_version_delete(s1);
+  semver_version_delete(s2);
 }
 
 void test_semverreq_parse(void) {
