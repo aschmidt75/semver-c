@@ -42,6 +42,7 @@ int semver_cmp(const char *_a, const char *_b, int *res) {
     return 2;
   }
   if(!b) {
+    semver_version_delete(a);
     return 3;
   }
 
@@ -134,11 +135,15 @@ semver_version semver_version_from(unsigned long major, unsigned long minor,
 
 semver_version semver_version_from_string(const char *s) {
   int k;
-  semver_version_impl *res = (semver_version_impl *)semver_version_new();
+  semver_version_impl *res = 0;
+  if (!s) {
+    return 0;
+  }
+  res = (semver_version_impl *)semver_version_new();
   k = semver_version_from_string_impl(res, s);
   if (k != SEMVER_OK) {
     semver_version_delete(res);
-    return NULL;
+    return 0;
   }
   return (semver_version )res;
 }
@@ -146,9 +151,14 @@ semver_version semver_version_from_string(const char *s) {
 semver_version_wrapped semver_version_from_string_wrapped(const char *s) {
   int k;
   semver_version_wrapped res;
-  semver_version_impl *impl = (semver_version_impl *)semver_version_new();
+  semver_version_impl *impl = 0;
   res.err = 0;
   res.unwrap.result = 0;
+  if (!s) {
+    res.err = 1;
+    return res;
+  }
+  impl = (semver_version_impl *)semver_version_new();
   k = semver_version_from_string_impl(impl, s);
   if (k != SEMVER_OK) {
     res.err = 1;

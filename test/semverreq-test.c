@@ -233,6 +233,87 @@ void test_wb_parse_version_req_2nd(void) {
   }
 }
 
+typedef struct {
+  const char *v;
+  const char *r;
+  const int res;
+} exp5_t;
+
+void test_semverreq_match_exact() {
+  const exp5_t tests[] = {
+      { "0.0.1", 0, 1 },
+      { "1.45.3-alpha", 0, 1 },
+      { "1.45.3-beta+some", 0, 1 },
+      { "1.45.3", 0, 1 },
+      };
+  const size_t n = sizeof(tests)/sizeof(exp5_t);
+  int res, err;
+  size_t i;
+  char buf[255];
+
+  for (i = 0; i < n; i++) {
+    res = 99;
+
+    memset(buf, 0, sizeof(buf));
+    buf[0] = '=';
+    strcpy(&buf[1], tests[i].v);
+    err = semver_matches(tests[i].v, buf, &res);
+
+    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_NOT_EQUAL(99, res);
+    TEST_ASSERT_GREATER_THAN(0, res);
+  }
+}
+
+void test_semverreq_match_range() {
+  const exp5_t tests[] = {
+      { "0.0.0",        ">=0.0.1 <1.0.0", 0 },
+      { "0.0.1-alpha",  ">=0.0.1 <1.0.0", 0 },
+      { "0.0.1",        ">=0.0.1 <1.0.0", 1 },
+      { "0.0.1",        ">0.0.1 <1.0.0", 0 },
+      { "0.0.2",        ">0.0.1 <1.0.0", 1 },
+      { "0.1.0",        ">0.0.1 <1.0.0", 1 },
+      { "0.9.9-alpha",  ">0.0.1 <1.0.0", 1 },
+      { "1.0.0",        ">0.0.1 <1.0.0", 0 },
+      { "1.0.0",        ">0.0.1 <=1.0.0", 1 },
+      { "1.3.0",        ">=1.3.0 <2.0.0", 1 },
+      { "1.45.3",       ">=1.3.0 <2.0.0", 1 },
+      { "2.0.0",        ">=1.3.0 <2.0.0", 0 }
+  };
+  const size_t n = sizeof(tests)/sizeof(exp5_t);
+  int res, err;
+  size_t i;
+
+  for (i = 0; i < n; i++) {
+    res = 99;
+    err = semver_matches(tests[i].v, tests[i].r, &res);
+
+    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_NOT_EQUAL(99, res);
+    TEST_ASSERT_EQUAL(tests[i].res, res);
+  }
+}
+
+void test_semverreq_match_range_ops() {
+  const exp5_t tests[] = {
+      { "0.1.3",        "~0.1.0", 1 },
+      { "0.1.3",        "~0.1.1", 1 },
+      { "0.1.3",        "~0.0.1", 0 },
+  };
+  const size_t n = sizeof(tests)/sizeof(exp5_t);
+  int res, err;
+  size_t i;
+
+  for (i = 0; i < n; i++) {
+    res = 99;
+    err = semver_matches(tests[i].v, tests[i].r, &res);
+
+    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_NOT_EQUAL(99, res);
+    TEST_ASSERT_EQUAL(tests[i].res, res);
+  }
+}
+
 void run_semverreq_tests(void) {
   /* explicitly constructed semverreqs should print correctly */
   RUN_TEST(test_semverreq_print);
@@ -247,4 +328,9 @@ void run_semverreq_tests(void) {
 
   /* paring should work correctly */
   RUN_TEST(test_semverreq_parse);
+
+  /* high level function should work correctly */
+  RUN_TEST(test_semverreq_match_exact);
+  RUN_TEST(test_semverreq_match_range);
+  RUN_TEST(test_semverreq_match_range_ops);
 }

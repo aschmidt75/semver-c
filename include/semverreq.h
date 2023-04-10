@@ -36,9 +36,10 @@ extern "C" {
  * Both input strings must be valid semver version and requirements strings.
  * @param[in] version_str e.g.: "3.24.2"
  * @param[in] versionreq_str, e.g. ">=3.20.0 <4.0.0"
- * @return 0 if version matches requirements, != 0 otherwise; > 0 indicates an error in input parameters
+ * @param[out] res: 1 if version matches requirements, 0 otherwise;
+ * @return err: 0 = successful operation, != 0 indicates an error in input parameters
  */
-int semver_matches(const char *version_str, const char *versionreq_str);
+int semver_matches(const char *version_str, const char *versionreq_str, int *res);
 
 /**
  * semver_version_req
@@ -125,7 +126,9 @@ int semver_version_req_snprint(semver_version_req self, char *buf, size_t sz);
 int semver_version_req_sprint(semver_version_req self, char *buf);
 
 /**
- * semver_version_req_matches checks, if `v` is within the bounds of `self`
+ * semver_version_req_matches checks, if `v` is within the bounds of `self`.
+ * self and v must be correctly set up, otherwise the result may be wrong.
+ * @returns 1 if it matches, 0 otherwise
  */
 int semver_version_req_matches(semver_version_req self, semver_version v);
 

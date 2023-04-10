@@ -30,6 +30,37 @@
 #include "semver.h"
 #include "semverreq.h"
 
+int semver_matches(const char *version_str, const char *versionreq_str, int *res) {
+  semver_version_req r = 0;
+  semver_version v = 0;
+  int err = 1;
+
+  if (!res || !version_str || !versionreq_str ) {
+    goto end_delete;
+  }
+
+  v = semver_version_from_string(version_str);
+  if (!v) {
+    goto end_delete;
+  }
+
+  r = semver_version_req_from_string(versionreq_str);
+  if (!r) {
+    goto end_delete;
+  }
+
+  *res = semver_version_req_matches(r, v);
+  err = 0;
+
+end_delete:
+  if(v) {
+    semver_version_delete(v);
+  }
+  if(r) {
+    semver_version_req_delete(r);
+  }
+  return err;
+}
 
 #define SEMVERREQ_NEW(obj, type)                                               \
   do {                                                                         \
@@ -522,4 +553,25 @@ int semver_version_req_sprint(semver_version_req _self, char *buf) {
   }
 
   return sprintf(buf, "%s%s %s%s", lower_cmp, buf1, upper_cmp, buf2);
+}
+
+int semver_version_req_matches(semver_version_req _self, semver_version v) {
+  int cl, cu;
+
+  semver_version_req_impl self = (semver_version_req_impl)_self;
+
+  cl = semver_version_cmp(v, self->lower);
+  if (cl < 0 || (cl == 0 && !self->lower_including)) {
+    return 0;
+    /* v is not compatible with lower bound */
+  }
+
+  cu = semver_version_cmp(v, self->upper);
+  if (cu > 0 || (cu == 0 && !self->upper_including)) {
+    return 0;
+    /* v is not compatible with upper bound */
+  }
+
+  /* v is compatible with both lower and upper bound */
+  return 1;
 }
