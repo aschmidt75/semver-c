@@ -283,6 +283,7 @@ semver_version_req_from_string_wrapped(const char *str) {
   int special_op = 0;
   unsigned long ma = 0;
   unsigned long mi = 0;
+  unsigned long pa = 0;
 
   if (str == 0 || strlen(str) == 0) {
     semver_version_req_wrapped err = ERROR_CON(SEMVERREQ_EOI);
@@ -345,7 +346,7 @@ semver_version_req_from_string_wrapped(const char *str) {
       tilde == flexible patch
       set upper part, e.g.
       ~1.3.5 to < 1.4.0
-      ~1.3 to < 2.0.0
+      ~1.3.x to < 2.0.0
       */
       res->upper_including = 0;
       ma = semver_version_get_major(part1.l);
@@ -355,17 +356,37 @@ semver_version_req_from_string_wrapped(const char *str) {
       special_op = 1;
     }
     if (strcmp(part1.comparator_buf, "^") == 0) {
-      /*
-      Caret == flexible minor + patch
-      set upper part, e.g.
-      ~1.3.5 to < 2.0.0
-      ~3.3 to < 4.0.0
-      */
-      res->upper_including = 0;
       ma = semver_version_get_major(part1.l);
+      mi = semver_version_get_minor(part1.l);
 
-      res->upper = semver_version_from(ma+1, 0, 0, 0, 0);
-      special_op = 1;
+      if (ma == 0 && mi == 0) {
+        pa = semver_version_get_patch(part1.l);
+
+        /* no flexibility: only the exact version will match */
+        res->upper_including = res->lower_including = 1;
+
+        res->upper = semver_version_from(0, 0, pa, 0, 0);
+        special_op = 1;
+      } else {
+        if (ma == 0 && mi >= 1) {
+          /* major zero, increase minor */
+          res->upper_including = 0;
+          res->upper = semver_version_from(ma, mi+1, 0, 0, 0);
+          special_op = 1;
+        } else {
+          /*
+           Caret == flexible minor + patch
+           set upper part, e.g.
+           ~1.3.5 to < 2.0.0
+           ~3.3 to < 4.0.0
+           */
+          res->upper_including = 0;
+          res->upper = semver_version_from(ma+1, 0, 0, 0, 0);
+          special_op = 1;
+
+        }
+      }
+
     }
   } else {
     /** Only look at the rest if no special operator (tilde, caret) has been processed */
