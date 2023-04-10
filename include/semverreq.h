@@ -31,13 +31,14 @@ extern "C" {
 #endif
 
 /**
- * semver_matches checks, if given semantic versioning string `version_str`
- * matches the requirements given by `versionreq_str`.
- * Both input strings must be valid semver version and requirements strings.
+ * semver_matches checks if given semantic versioning string `version_str`
+ * matches the requirements given by `versionreq_str`. This is the convenience
+ * function operating on strings. Both input strings must be valid semver version
+ * and requirements strings.
  * @param[in] version_str e.g.: "3.24.2"
- * @param[in] versionreq_str, e.g. ">=3.20.0 <4.0.0"
+ * @param[in] versionreq_str, e.g. ">=3.20.0 <4.0.0" or "~3.24.0"
  * @param[out] res: 1 if version matches requirements, 0 otherwise;
- * @return err: 0 = successful operation, != 0 indicates an error in input parameters
+ * @return err: 0/SEMVERREQ_OK = successful operation, != 0 indicates an error in input parameters
  */
 int semver_matches(const char *version_str, const char *versionreq_str, int *res);
 

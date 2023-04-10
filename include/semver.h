@@ -37,7 +37,8 @@ extern "C" {
 
 
 /**
- * semver_cmp compares two versios, a, b semver version strings != NULL
+ * semver_cmp compares two versions, a, b semver version strings != NULL
+ * This is the convenience function operating on strings.
  * @param[in] a
  * @param[in] b
  * @param[out] res
@@ -45,7 +46,7 @@ extern "C" {
  * <0 if a < b
  *  0 if a == b
  * >0 if a > b
- * @return success of comparison operation: 0 = successful, !=0 parsing error or comparison error
+ * @return success of comparison operation: 0/SEMVER_OK = successful, !=0 parsing error or comparison error
  */
 int semver_cmp(const char *a, const char *b, int *res);
 
@@ -102,7 +103,7 @@ semver_version semver_version_from(unsigned long major, unsigned long minor,
                                     const char *build);
 
 /**
- * semver_version_new_from_string allocates  a new semver_version struct and
+ * semver_version_new_from_string allocates a new semver_version struct and
  * parses from a given semver string. Returns NULL in case the given string
  * could not be parsed correctly. For error handling, see wrapped version below.
  * Must use semver_version_delete to free space.

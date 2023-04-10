@@ -296,9 +296,10 @@ void test_semverreq_match_range() {
 
 void test_semverreq_match_range_ops() {
   const exp5_t tests[] = {
-      { "0.1.3",        "~0.1.0", 1 },
-      { "0.1.3",        "~0.1.1", 1 },
-      { "0.1.3",        "~0.0.1", 0 },
+      { "1.1.3",        "~1.1.0", 1 },
+      { "1.1.3",        "~1.1.1", 1 },
+      { "1.2.3",        "~1.1.1", 0 },
+      { "1.1.3",        "~1.0.1", 0 },
   };
   const size_t n = sizeof(tests)/sizeof(exp5_t);
   int res, err;
@@ -314,6 +315,32 @@ void test_semverreq_match_range_ops() {
   }
 }
 
+#define vv    "1.0.0"
+#define vreq  ">=0.0.0 <99.99.99"
+
+void test_semverreq_match_invalid() {
+  const exp5_t tests[] = {
+      { 0, vreq, 0},
+      { vv, 0, 0 },
+      { "0.a.0",        vreq, 0 },
+      { vv, "!~1.1.1", 0}
+  };
+  const size_t n = sizeof(tests)/sizeof(exp5_t);
+  int res, err;
+  size_t i;
+
+  err = semver_matches(vv, vreq, 0);
+  TEST_ASSERT_NOT_EQUAL(0, err);
+
+  for (i = 0; i < n; i++) {
+    res = 99;
+    err = semver_matches(tests[i].v, tests[i].r, &res);
+
+    TEST_ASSERT_NOT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL(99, res);
+  }
+}
+
 void run_semverreq_tests(void) {
   /* explicitly constructed semverreqs should print correctly */
   RUN_TEST(test_semverreq_print);
@@ -326,11 +353,12 @@ void run_semverreq_tests(void) {
   RUN_TEST(test_wb_parse_version_req_2nd);
   RUN_TEST(test_wb_parse_version_req_invalid);
 
-  /* paring should work correctly */
+  /* parsing should work correctly */
   RUN_TEST(test_semverreq_parse);
 
-  /* high level function should work correctly */
+  /* high level match function should work correctly */
   RUN_TEST(test_semverreq_match_exact);
   RUN_TEST(test_semverreq_match_range);
   RUN_TEST(test_semverreq_match_range_ops);
+  RUN_TEST(test_semverreq_match_invalid);
 }
