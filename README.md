@@ -29,11 +29,11 @@ operating on strings, as well as functions for parsing, printing and comparing i
 #include <assert.h>
 
 /* ... */
-  int res, err;
-  err = semver_cmp( "1.0.4", "1.1.0", &res);
-  assert(err == SEMVER_OK);
-  assert(res < 0);
-  ```
+int res, err;
+err = semver_cmp( "1.0.4", "1.1.0", &res);
+assert(err == SEMVER_OK);
+assert(res < 0);
+```
 
 *Check if a semver version string matches a semver requirement*
 
@@ -50,16 +50,43 @@ operating on strings, as well as functions for parsing, printing and comparing i
 
 ### Parsing
 
+Use the `semver_version_from_` and `semver_version_req_from_` functions to construct semver and semver requirement structs
+from inputs such as strings:
+
+```c
+semver_version v;
+v = semver_version_from_string("1.3.7");
+
+semver_versionreq r;
+r = semver_version_req_from_string(">=1.2.0 <2.0.0");
+```
+
+Checking for requirements, e.g. is `v` included in the range of `r`:
+
+```c
+assert(semver_version_req_matches(r, v) == 1);
+```
+
+Printing:
+
+```c
+char buf[256];
+semver_version_snprint(v, buf, sizeof(buf));
+
+/* ... */
+semver_version_req_snprint(r, buf, sizeof(buf));
+```
+
 ## Test
 
-First time setup for cloning Unity as a submodule and initializing the meson build system:
+First time setup: cloning Unity as a submodule and initializing the meson build system:
 
 ```bash
 $ git submodule update --init
 $ meson setup build
 ```
 
-To run a test:
+To run tests:
 
 ```bash
 $ meson test -C build --print-errorlogs -v

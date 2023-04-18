@@ -468,8 +468,8 @@ int count_dots(const char *s) {
 
 int atoi_checked(const char *s, unsigned long *res) {
   const char *p = s;
-  const max_num_len = 6;
-  int i = 0;
+  const size_t max_num_len = 6;
+  size_t i = 0;
   char *ptr;
 
   if (s == NULL) {

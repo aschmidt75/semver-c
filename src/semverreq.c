@@ -266,11 +266,6 @@ semver_version_req semver_version_req_from_string(const char *str) {
   return res.unwrap.result;
 }
 
-#define ERROR_CON(__code__)                                                    \
-  {                                                                            \
-    .err = 1, .unwrap = {.code = __code__ }                                    \
-  }
-
 semver_version_req_wrapped
 semver_version_req_from_string_wrapped(const char *str) {
 
@@ -278,15 +273,18 @@ semver_version_req_from_string_wrapped(const char *str) {
   int st = 0;
   semver_version_req_impl res = 0;
   _req_parser_result_t part1, part2;
-  semver_version_req_wrapped w = {.err = 0};
+  semver_version_req_wrapped w;
   int swap_flags[2] = { 0, 0 };
   int special_op = 0;
   unsigned long ma = 0;
   unsigned long mi = 0;
   unsigned long pa = 0;
+  w.err = 0;
 
   if (str == 0 || strlen(str) == 0) {
-    semver_version_req_wrapped err = ERROR_CON(SEMVERREQ_EOI);
+    semver_version_req_wrapped err;
+    err.err = 1;
+    err.unwrap.code = SEMVERREQ_EOI;
     return err;
   }
 
@@ -298,12 +296,16 @@ semver_version_req_from_string_wrapped(const char *str) {
 
   if (part1.l == 0) {
     /* first part not parsed successful */
-    semver_version_req_wrapped err = ERROR_CON(SEMVERREQ_INVALID_SEMVER);
+    semver_version_req_wrapped err;
+    err.err = 1;
+    err.unwrap.code = SEMVERREQ_INVALID_SEMVER;
     free(res);
     return err;
   }
   if (!part1.comparator_valid) {
-    semver_version_req_wrapped err = ERROR_CON(SEMVERREQ_INVALID_COMPARATOR);
+    semver_version_req_wrapped err;
+    err.err = 1;
+    err.unwrap.code = SEMVERREQ_INVALID_COMPARATOR;
     free(res);
     return err;
   }
@@ -346,7 +348,6 @@ semver_version_req_from_string_wrapped(const char *str) {
       tilde == flexible patch
       set upper part, e.g.
       ~1.3.5 to < 1.4.0
-      ~1.3.x to < 2.0.0
       */
       res->upper_including = 0;
       ma = semver_version_get_major(part1.l);
@@ -394,7 +395,9 @@ semver_version_req_from_string_wrapped(const char *str) {
       parse_version_req(part1.last, &part2);
 
       if (part2.l == 0) {
-        semver_version_req_wrapped err = ERROR_CON(SEMVERREQ_INVALID_SEMVER);
+        semver_version_req_wrapped err;
+        err.err = 1;
+        err.unwrap.code = SEMVERREQ_INVALID_SEMVER;
 
         /* 2nd part not parsed successful, check why */
         free(res);
@@ -402,7 +405,9 @@ semver_version_req_from_string_wrapped(const char *str) {
         return err;
       }
       if (!part2.comparator_valid) {
-        semver_version_req_wrapped err = ERROR_CON(SEMVERREQ_INVALID_COMPARATOR);
+        semver_version_req_wrapped err;
+        err.err = 1;
+        err.unwrap.code = SEMVERREQ_INVALID_COMPARATOR;
 
         free(res);
         free(part1.l);
