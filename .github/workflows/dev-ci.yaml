@@ -29,6 +29,10 @@ jobs:
         sudo apt-get install -y pkg-config
         pip install meson
 
+    - name: Clone submodules
+      run: |
+        git submodule update --init
+
     - name: Configure and build
       run: |
         meson setup build --buildtype=release
