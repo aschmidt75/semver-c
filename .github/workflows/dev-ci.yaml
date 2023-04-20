@@ -31,7 +31,7 @@ jobs:
 
     - name: Configure and build
       run: |
-        meson setup build --buildtype=release --std=c89
+        meson setup build --buildtype=release
         meson compile -C build
 
     - name: Run tests
