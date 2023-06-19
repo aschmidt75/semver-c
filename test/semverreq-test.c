@@ -187,6 +187,12 @@ void test_wb_parse_version_req(void) {
     TEST_ASSERT_EQUAL_STRING(buf, tests[i].exp_v);
 
     TEST_ASSERT_TRUE(res.comparator_valid);
+
+    /* clean up */
+    if(res.l) {
+      semver_version_delete(res.l);
+    }
+    
   }
 }
 
@@ -208,6 +214,7 @@ void test_wb_parse_version_req_invalid(void) {
 
     TEST_ASSERT_EQUAL(tests[i].comparator_valid, res.comparator_valid);
     TEST_ASSERT_EQUAL(tests[i].version_valid, res.l != 0);
+    semver_version_delete(res.l);
   }
 }
 
@@ -234,6 +241,12 @@ void test_wb_parse_version_req_2nd(void) {
     TEST_ASSERT_EQUAL_STRING(buf, tests[i].exp_v);
 
     TEST_ASSERT_TRUE(res_second.comparator_valid);
+    if(res_first.l != 0) {
+      semver_version_delete(res_first.l);
+    }
+    if(res_second.l != 0) {
+      semver_version_delete(res_second.l);
+    }
   }
 }
 
@@ -243,7 +256,7 @@ typedef struct {
   const int res;
 } exp5_t;
 
-void test_semverreq_match_exact() {
+void test_semverreq_match_exact(void) {
   const exp5_t tests[] = {
       { "0.0.1", 0, 1 },
       { "1.45.3-alpha", 0, 1 },
@@ -269,7 +282,7 @@ void test_semverreq_match_exact() {
   }
 }
 
-void test_semverreq_match_range() {
+void test_semverreq_match_range(void) {
   const exp5_t tests[] = {
       { "0.0.0",        ">=0.0.1 <1.0.0", 0 },
       { "0.0.1-alpha",  ">=0.0.1 <1.0.0", 0 },
@@ -298,7 +311,7 @@ void test_semverreq_match_range() {
   }
 }
 
-void test_semverreq_match_range_ops() {
+void test_semverreq_match_range_ops(void) {
   const exp5_t tests[] = {
       { "1.1.3",        "~1.1.0", 1 },
       { "1.1.3",        "~1.1.1", 1 },
@@ -331,7 +344,7 @@ void test_semverreq_match_range_ops() {
 #define vv    "1.0.0"
 #define vreq  ">=0.0.0 <99.99.99"
 
-void test_semverreq_match_invalid() {
+void test_semverreq_match_invalid(void) {
   const exp5_t tests[] = {
       { 0, vreq, 0},
       { vv, 0, 0 },

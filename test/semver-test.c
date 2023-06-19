@@ -8,7 +8,7 @@
 /* white-box test */
 extern int semver_version_from_string_impl(semver_version self, const char *s);
 extern int semver_version_prerelease_cmp(const char *a, const char *b);
-extern semver_version semver_version_new();
+extern semver_version semver_version_new(void);
 
 typedef struct {
   const char *inp;
@@ -71,6 +71,7 @@ void test_semver_invalid_parsing(void) {
     s1 = semver_version_new();
     res = semver_version_from_string_impl(s1, tests[i].inp);
     TEST_ASSERT_EQUAL(res, tests[i].exp_rc);
+    semver_version_delete(s1);
   }
 }
 
@@ -110,6 +111,7 @@ void test_semver_valid_parsing(void) {
 
     w1 = semver_version_from_string_wrapped(inp[i]);
     TEST_ASSERT_FALSE(w1.err);
+    semver_version_delete(w1.unwrap.result);
   }
 
   for (i = 0; i < sizeof(tests) / sizeof(exp2_t); i++) {
@@ -199,7 +201,7 @@ void test_semver_constructing(void) {
   }
 }
 
-void test_semver_cmp() {
+void test_semver_cmp(void) {
   const exp4_t tests[] = {
       {"1.0.0", "2.0.0", -5},
       {"2.0.0", "1.0.0", 5},
@@ -234,7 +236,7 @@ void test_semver_cmp() {
   }
 }
 
-void test_semver_cmp2() {
+void test_semver_cmp2(void) {
 
   /*
    * https://semver.org/spec/v2.0.0.html 11.4.4
@@ -261,7 +263,7 @@ void test_semver_cmp2() {
 
 /* whitebox test the prerelease compare function with specific perrelease
  * strings */
-void test_semver_prerelease_cmp() {
+void test_semver_prerelease_cmp(void) {
   const exp4_t tests[] = {
       {"alpha", "alpha", 0},
       {"alpha.1", "alpha.1", 0},
@@ -288,7 +290,7 @@ void test_semver_prerelease_cmp() {
   }
 }
 
-void test_semver_copy() {
+void test_semver_copy(void) {
   const exp_t tests[] = {
     { "1.2.3", 0 },
   };
@@ -314,7 +316,7 @@ void test_semver_copy() {
 
 }
 
-void test_semver_cmp3() {
+void test_semver_cmp3(void) {
 
   const char *arr[] = {
       "0.0.0",
@@ -364,7 +366,7 @@ void test_semver_cmp3() {
   }
 }
 
-void test_semver_cmp3_invalid() {
+void test_semver_cmp3_invalid(void) {
   int comp_res, r;
 
   r = semver_cmp(0, 0, 0);
@@ -377,7 +379,7 @@ void test_semver_cmp3_invalid() {
   TEST_ASSERT_NOT_EQUAL(0, r);
 }
 
-void run_semver_tests() {
+void run_semver_tests(void) {
   int i;
   for (i = 0; i < 1; i++) {
     RUN_TEST(test_semver_formatting);

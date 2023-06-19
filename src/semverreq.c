@@ -66,7 +66,7 @@ end_delete:
   do {                                                                         \
     obj = malloc(sizeof(type));                                                \
     if (!obj) {                                                                \
-      printf("Malloc Error: %s\n", __func__);                                  \
+      printf("Malloc Error\n");                                                \
       assert(0);                                                               \
     }                                                                          \
   } while (0);
@@ -281,6 +281,11 @@ semver_version_req_from_string_wrapped(const char *str) {
   unsigned long pa = 0;
   w.err = 0;
 
+  memset(part1.comparator_buf,0,sizeof(part1.comparator_buf));
+  part1.last = 0; part1.l = 0;
+  memset(part2.comparator_buf,0,sizeof(part2.comparator_buf));
+  part2.last = 0; part2.l = 0;
+
   if (str == 0 || strlen(str) == 0) {
     semver_version_req_wrapped err;
     err.err = 1;
@@ -312,7 +317,7 @@ semver_version_req_from_string_wrapped(const char *str) {
 
   /* TODO check for 1 or 2 parts, apply rules */
   /* do we have chars left other than whitespaces? */
-  p = part1.last;
+  p = (char*)part1.last;
   while (p && *p) {
     if( *p == ' ' || *p == '\t') {
       /* ws */

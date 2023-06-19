@@ -98,7 +98,7 @@ typedef struct {
  */
 int semver_version_from_string_impl(semver_version self, const char *s);
 
-semver_version semver_version_new() {
+semver_version semver_version_new(void) {
   semver_version_impl *res;
 
   SEMVER_NEW(res, semver_version_impl);

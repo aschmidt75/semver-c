@@ -1,8 +1,8 @@
 #include "unity.h"
 #include <stdlib.h>
 
-extern void run_semver_tests();
-extern void run_semverreq_tests();
+extern void run_semver_tests(void);
+extern void run_semverreq_tests(void);
 
 void setUp(void) {}
 
