@@ -8,10 +8,10 @@ For building and testing here, [meson](https://mesonbuild.com/index.html) is req
 * compiles with c89
 * no dependencies for core library parts
 * supports [semver 2.0.0](https://semver.org/spec/v2.0.0.html)
-* support for TILDE and CARET comparisons (see also)[https://nodesource.com/blog/semver-tilde-and-caret/], e.g.
-  * `~1.3.1` includes `1.3.4` up to (not including) `1.4.0` (flexible patch)
-  * `^1.1.0` includes `1.3.4` up to (not including) `2.0.0` (Caret: Flexible Minor and Patch)
-  * `^0.1.0` includes `0.1.4` up to but not including `0.2.0` (Caret: Major Zero)
+* support for TILDE and CARET comparisons [see also](https://nodesource.com/blog/semver-tilde-and-caret/), e.g.
+  * `~1.3.1` includes `1.3.1` up to (not including) `1.4.0` (flexible patch)
+  * `^1.1.0` includes `1.1.0` up to (not including) `2.0.0` (Caret: Flexible Minor and Patch)
+  * `^0.1.0` includes `0.1.0` up to but not including `0.2.0` (Caret: Major Zero)
   * `^0.0.4` matches only `0.0.4` (Caret: Major Zero and Minor Zero)
 
 ## Usage examples
