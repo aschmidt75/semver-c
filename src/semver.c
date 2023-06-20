@@ -29,6 +29,14 @@
 
 #include "semver.h"
 
+char *semver_strdup(const char *str) {
+  size_t n = strlen(str)+1;
+  char *d = malloc(n);
+  if(d) {
+    strcpy(d,str);
+  }
+  return d;
+}
 
 int semver_cmp(const char *_a, const char *_b, int *res) {
   semver_version a,b;
@@ -121,12 +129,12 @@ semver_version semver_version_from(unsigned long major, unsigned long minor,
   res->minor = minor;
   res->patch = patch;
   if (prerelease != NULL && strlen(prerelease) > 0) {
-    res->prerelease = strdup(prerelease);
+    res->prerelease = semver_strdup(prerelease);
   } else {
     res->prerelease = 0;
   }
   if (build != NULL && strlen(build) > 0) {
-    res->build = strdup(build);
+    res->build = semver_strdup(build);
   } else {
     res->build = 0;
   }
@@ -186,10 +194,10 @@ semver_version semver_version_from_copy(const semver_version _v) {
   res->build = 0;
 
   if (v->prerelease != 0) {
-    res->prerelease = strdup(v->prerelease);
+    res->prerelease = semver_strdup(v->prerelease);
   }
   if (v->build != 0) {
-    res->build = strdup(v->build);
+    res->build = semver_strdup(v->build);
   }
 
   return (semver_version)res;
@@ -363,11 +371,11 @@ int semver_version_from_string_impl(semver_version _self, const char *s) {
     memset(scratch, 0, sizeof(scratch));
     do {
       if (*p == 0) {
-        self->prerelease = strdup(scratch);
+        self->prerelease = semver_strdup(scratch);
         return SEMVER_OK; /* at end */
       }
       if (*p == '+') {
-        self->prerelease = strdup(scratch);
+        self->prerelease = semver_strdup(scratch);
         /* prerelease read, more to follow */
         break;
       }
@@ -388,7 +396,7 @@ int semver_version_from_string_impl(semver_version _self, const char *s) {
     memset(scratch, 0, sizeof(scratch));
     do {
       if (*p == 0) {
-        self->build = strdup(scratch);
+        self->build = semver_strdup(scratch);
         return SEMVER_OK;
       }
       if ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'z') ||
@@ -530,7 +538,7 @@ int semver_version_prerelease_cmp(const char *a, const char *b) {
 
   /* split each string by '.' */
   na = count_dots(a) + 1;
-  _a = strdup(a);
+  _a = semver_strdup(a);
 
   arr_a = (char **)calloc(na, sizeof(char *));
   p = _a;
@@ -549,7 +557,7 @@ int semver_version_prerelease_cmp(const char *a, const char *b) {
   /* -- b
     split each string by '.' */
   nb = count_dots(b) + 1;
-  _b = strdup(b);
+  _b = semver_strdup(b);
 
   arr_b = (char **)calloc(nb, sizeof(char *));
   p = _b;
